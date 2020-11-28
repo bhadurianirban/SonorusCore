@@ -34,12 +34,7 @@
             <version>1.0-SNAPSHOT</version>
             <type>jar</type>
         </dependency>
-        <dependency>
-            <groupId>org.dgrf.cms.core</groupId>
-            <artifactId>DGRFCMSCoreClient</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <type>jar</type>
-        </dependency>
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
@@ -49,6 +44,11 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>WavRead</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.leviosa</groupId>
+            <artifactId>LeviosaCoreClient</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <properties>

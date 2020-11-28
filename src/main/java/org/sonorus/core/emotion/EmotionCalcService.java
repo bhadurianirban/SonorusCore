@@ -14,9 +14,10 @@ import java.util.Map;
 import javax.persistence.EntityManagerFactory;
 import org.hedwig.cloud.response.HedwigResponseCode;
 
-import org.dgrf.cms.core.driver.CMSClientService;
+
 import org.hedwig.cms.constants.CMSConstants;
 import org.hedwig.cms.dto.TermInstanceDTO;
+import org.leviosa.core.driver.CMSClientService;
 import org.sonorus.core.dto.SonorusDTO;
 import org.sonorus.core.dto.SpeechEmoResultsMeta;
 import org.patronus.fractal.core.client.FractalCoreClient;
