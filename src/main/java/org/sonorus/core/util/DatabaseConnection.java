@@ -23,7 +23,7 @@ public class DatabaseConnection {
         DBPROPERTIES.put("javax.persistence.jdbc.user", DB_USER);
         DBPROPERTIES.put("javax.persistence.jdbc.password", DB_PASSWORD);
         
-        EMF = Persistence.createEntityManagerFactory("org.dgrf_DGRFSpeechCore_jar_1.0-SNAPSHOTPU", DBPROPERTIES);
+        EMF = Persistence.createEntityManagerFactory("org.SonorusCore", DBPROPERTIES);
         
         //EMF = Persistence.createEntityManagerFactory("org.dgrf_FractalStudio_jar_1.0-SNAPSHOTPU");
     }
