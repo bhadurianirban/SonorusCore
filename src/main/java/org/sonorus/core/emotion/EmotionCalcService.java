@@ -15,16 +15,16 @@ import javax.persistence.EntityManagerFactory;
 import org.hedwig.cloud.response.HedwigResponseCode;
 
 
-import org.hedwig.cms.constants.CMSConstants;
+import org.hedwig.leviosa.constants.CMSConstants;
 import org.hedwig.cms.dto.TermInstanceDTO;
-import org.leviosa.core.driver.CMSClientService;
+import org.leviosa.core.driver.LeviosaClientService;
 import org.sonorus.core.dto.SonorusDTO;
-import org.sonorus.core.dto.SpeechEmoResultsMeta;
-import org.patronus.fractal.core.client.FractalCoreClient;
-import org.patronus.fractal.constants.FractalConstants;
-import org.patronus.fractal.core.dto.FractalDTO;
-import org.patronus.fractal.response.FractalResponseCode;
-import org.patronus.fractal.termmeta.MFDFAResultsMeta;
+import org.sonorus.core.dto.SonorusResultsMeta;
+import org.patronus.core.client.PatronusCoreClient;
+import org.patronus.constants.PatronusConstants;
+import org.patronus.core.dto.FractalDTO;
+import org.patronus.response.FractalResponseCode;
+import org.patronus.termmeta.MFDFAResultsMeta;
 import org.sonorus.core.db.DAO.EmotionDAO;
 import org.sonorus.core.entities.Emohurstvalues;
 import org.sonorus.core.util.DatabaseConnection;
@@ -57,9 +57,9 @@ public class EmotionCalcService {
 
         
         //upload csv to dataseries table for fractal calculation
-        FractalCoreClient dss = new FractalCoreClient();
+        PatronusCoreClient dss = new PatronusCoreClient();
         FractalDTO fractalDTO = new FractalDTO();
-        fractalDTO.setAuthCredentials(dgrfSpeechDTO.getAuthCredentials());
+        fractalDTO.setHedwigAuthCredentials(dgrfSpeechDTO.getHedwigAuthCredentials());
         fractalDTO.setCsvFilePath(csvFilePath);
         fractalDTO.setFractalTermInstance(dgrfSpeechDTO.getSpeechDataSeriesTermInstance());
         fractalDTO = dss.uploadDataSeries(fractalDTO);
@@ -67,11 +67,11 @@ public class EmotionCalcService {
         return dgrfSpeechDTO;
     }
     private SonorusDTO calculateHurst (SonorusDTO dGRFSpeechDTO) {
-        CMSClientService cmscs = new CMSClientService();
+        //LeviosaClientService cmscs = new LeviosaClientService();
         //calculation of MFDFA
-        FractalCoreClient fractalCoreClient = new FractalCoreClient();
+        PatronusCoreClient fractalCoreClient = new PatronusCoreClient();
         FractalDTO fractalDTO = new FractalDTO();
-        fractalDTO.setAuthCredentials(dGRFSpeechDTO.getAuthCredentials());
+        fractalDTO.setHedwigAuthCredentials(dGRFSpeechDTO.getHedwigAuthCredentials());
         fractalDTO.setParamSlug("mfdfadefault");
         fractalDTO.setDataSeriesSlug(dGRFSpeechDTO.getDataSeriesSlug());
 
@@ -113,63 +113,63 @@ public class EmotionCalcService {
     private SonorusDTO createSpeechEmoTermInstance (List<String> decidedEmotions,SonorusDTO dgrfSpeechDTO) {
         String mfdfaTermInstanceSlug = (String) dgrfSpeechDTO.getMfdfaTermInstance().get(CMSConstants.TERM_INSTANCE_SLUG);
         Map<String, Object> speechEmoTermInstance = new HashMap<>();
-        speechEmoTermInstance.put(SpeechEmoResultsMeta.DATASERIES, dgrfSpeechDTO.getDataSeriesSlug());
-        speechEmoTermInstance.put(SpeechEmoResultsMeta.EMOTION, decidedEmotions);
-        speechEmoTermInstance.put(SpeechEmoResultsMeta.MFDFA_INSTANCE, mfdfaTermInstanceSlug);
+        speechEmoTermInstance.put(SonorusResultsMeta.DATASERIES, dgrfSpeechDTO.getDataSeriesSlug());
+        speechEmoTermInstance.put(SonorusResultsMeta.EMOTION, decidedEmotions);
+        speechEmoTermInstance.put(SonorusResultsMeta.MFDFA_INSTANCE, mfdfaTermInstanceSlug);
         speechEmoTermInstance.put(CMSConstants.TERM_INSTANCE_SLUG, mfdfaTermInstanceSlug + "emo");
-        speechEmoTermInstance.put(CMSConstants.TERM_SLUG, FractalConstants.TERM_SLUG_SPEECH_EMO);
+        speechEmoTermInstance.put(CMSConstants.TERM_SLUG, PatronusConstants.TERM_SLUG_SPEECH_EMO);
         dgrfSpeechDTO.setSpeechEmoTermInstance(speechEmoTermInstance);
         return dgrfSpeechDTO;
     }
-    private SonorusDTO  saveEmotionToCMS(SonorusDTO dgrfSpeechDTO) {
+    private SonorusDTO  saveEmotionToCMS(SonorusDTO sonorusDTO) {
         
 
         TermInstanceDTO termInstanceDTO = new TermInstanceDTO();
-        termInstanceDTO.setAuthCredentials(dgrfSpeechDTO.getAuthCredentials());
-        termInstanceDTO.setTermSlug(FractalConstants.TERM_SLUG_SPEECH_EMO);
-        termInstanceDTO.setTermInstance(dgrfSpeechDTO.getSpeechEmoTermInstance());
-        CMSClientService cmscs = new CMSClientService();
+        termInstanceDTO.setHedwigAuthCredentials(sonorusDTO.getHedwigAuthCredentials());
+        termInstanceDTO.setTermSlug(PatronusConstants.TERM_SLUG_SPEECH_EMO);
+        termInstanceDTO.setTermInstance(sonorusDTO.getSpeechEmoTermInstance());
+        LeviosaClientService cmscs = new LeviosaClientService(sonorusDTO.getHedwigAuthCredentials().getHedwigServer(),sonorusDTO.getHedwigAuthCredentials().getHedwigServerPort());
         termInstanceDTO = cmscs.saveTermInstance(termInstanceDTO);
         if (termInstanceDTO.getResponseCode()!=HedwigResponseCode.SUCCESS) {
-            dgrfSpeechDTO.setResponseCode(termInstanceDTO.getResponseCode());
-            return dgrfSpeechDTO;
+            sonorusDTO.setResponseCode(termInstanceDTO.getResponseCode());
+            return sonorusDTO;
         }
         
-        dgrfSpeechDTO.setResponseCode(HedwigResponseCode.SUCCESS);
-        return dgrfSpeechDTO;
+        sonorusDTO.setResponseCode(HedwigResponseCode.SUCCESS);
+        return sonorusDTO;
         
     }
-    public SonorusDTO decideEmotion(SonorusDTO dGRFSpeechDTO) {
+    public SonorusDTO decideEmotion(SonorusDTO sonorusDTO) {
         //get data series term instance
-        CMSClientService cmscs = new CMSClientService();
+        LeviosaClientService cmscs = new LeviosaClientService(sonorusDTO.getHedwigAuthCredentials().getHedwigServer(),sonorusDTO.getHedwigAuthCredentials().getHedwigServerPort());
         TermInstanceDTO termInstanceDTO = new TermInstanceDTO();
-        termInstanceDTO.setAuthCredentials(dGRFSpeechDTO.getAuthCredentials());
-        termInstanceDTO.setTermSlug(FractalConstants.TERM_SLUG_DATASERIES);
-        termInstanceDTO.setTermInstanceSlug(dGRFSpeechDTO.getDataSeriesSlug());
+        termInstanceDTO.setHedwigAuthCredentials(sonorusDTO.getHedwigAuthCredentials());
+        termInstanceDTO.setTermSlug(PatronusConstants.TERM_SLUG_DATASERIES);
+        termInstanceDTO.setTermInstanceSlug(sonorusDTO.getDataSeriesSlug());
         termInstanceDTO = cmscs.getTermInstance(termInstanceDTO);
         
         if ( termInstanceDTO.getResponseCode() != HedwigResponseCode.SUCCESS) {
-            dGRFSpeechDTO.setResponseCode(termInstanceDTO.getResponseCode());
-            return dGRFSpeechDTO;
+            sonorusDTO.setResponseCode(termInstanceDTO.getResponseCode());
+            return sonorusDTO;
         }
-        dGRFSpeechDTO.setSpeechDataSeriesTermInstance(termInstanceDTO.getTermInstance());
+        sonorusDTO.setSpeechDataSeriesTermInstance(termInstanceDTO.getTermInstance());
         //calculate MFDFA of data series
-        dGRFSpeechDTO = calculateHurst(dGRFSpeechDTO);
+        sonorusDTO = calculateHurst(sonorusDTO);
         
-        if (dGRFSpeechDTO.getResponseCode() != HedwigResponseCode.SUCCESS) {
-            return dGRFSpeechDTO;
+        if (sonorusDTO.getResponseCode() != HedwigResponseCode.SUCCESS) {
+            return sonorusDTO;
         }
-        String hurstexponent = (String) dGRFSpeechDTO.getMfdfaTermInstance().get(MFDFAResultsMeta.HURST_EXPONENT);
+        String hurstexponent = (String) sonorusDTO.getMfdfaTermInstance().get(MFDFAResultsMeta.HURST_EXPONENT);
         //calculate emotion
         
         List<String> decidedEmotions = calculateEmo(hurstexponent);
         //
-        dGRFSpeechDTO = createSpeechEmoTermInstance(decidedEmotions,dGRFSpeechDTO);
+        sonorusDTO = createSpeechEmoTermInstance(decidedEmotions,sonorusDTO);
         //save emotion term instance
-        dGRFSpeechDTO = saveEmotionToCMS(dGRFSpeechDTO);
+        sonorusDTO = saveEmotionToCMS(sonorusDTO);
         
 
-        return dGRFSpeechDTO;
+        return sonorusDTO;
     }   
     private List<String>  calculateEmo (String hurstexponent) {
         //getting average hurst value for different emotions
@@ -203,40 +203,40 @@ public class EmotionCalcService {
     }
 
 
-    public SonorusDTO deleteSpeechEmoInstance(SonorusDTO dGRFSpeechDTO) {
+    public SonorusDTO deleteSpeechEmoInstance(SonorusDTO sonorusDTO) {
         
-        FractalCoreClient fractalCoreClient = new FractalCoreClient();
+        PatronusCoreClient fractalCoreClient = new PatronusCoreClient();
         Map<String, Object> fractalTermInstance = new HashMap<>();
-        fractalTermInstance.put(CMSConstants.TERM_SLUG, FractalConstants.TERM_SLUG_MFDFA_CALC);
-        fractalTermInstance.put(CMSConstants.TERM_INSTANCE_SLUG, dGRFSpeechDTO.getSpeechEmoTermInstance().get(SpeechEmoResultsMeta.MFDFA_INSTANCE));
+        fractalTermInstance.put(CMSConstants.TERM_SLUG, PatronusConstants.TERM_SLUG_MFDFA_CALC);
+        fractalTermInstance.put(CMSConstants.TERM_INSTANCE_SLUG, sonorusDTO.getSpeechEmoTermInstance().get(SonorusResultsMeta.MFDFA_INSTANCE));
         FractalDTO fractalDTO = new FractalDTO();
         
-        fractalDTO.setAuthCredentials(dGRFSpeechDTO.getAuthCredentials());
+        fractalDTO.setHedwigAuthCredentials(sonorusDTO.getHedwigAuthCredentials());
         fractalDTO.setFractalTermInstance(fractalTermInstance);
 
         fractalDTO = fractalCoreClient.deleteMFDFAResults(fractalDTO);
         
         if ( fractalDTO.getResponseCode() != HedwigResponseCode.SUCCESS) {
-            dGRFSpeechDTO.setResponseCode(fractalDTO.getResponseCode());
-            return dGRFSpeechDTO;
+            sonorusDTO.setResponseCode(fractalDTO.getResponseCode());
+            return sonorusDTO;
         }
         
-        String selectedTermInstanceSlug = (String) dGRFSpeechDTO.getSpeechEmoTermInstance().get(CMSConstants.TERM_INSTANCE_SLUG);
-        CMSClientService cmscs = new CMSClientService();
+        String selectedTermInstanceSlug = (String) sonorusDTO.getSpeechEmoTermInstance().get(CMSConstants.TERM_INSTANCE_SLUG);
+        LeviosaClientService cmscs = new LeviosaClientService(sonorusDTO.getHedwigAuthCredentials().getHedwigServer(),sonorusDTO.getHedwigAuthCredentials().getHedwigServerPort());
         
         TermInstanceDTO termInstanceDTO = new TermInstanceDTO();
-        termInstanceDTO.setAuthCredentials(dGRFSpeechDTO.getAuthCredentials());
-        termInstanceDTO.setTermSlug((String) dGRFSpeechDTO.getSpeechEmoTermInstance().get(CMSConstants.TERM_SLUG));
+        termInstanceDTO.setHedwigAuthCredentials(sonorusDTO.getHedwigAuthCredentials());
+        termInstanceDTO.setTermSlug((String) sonorusDTO.getSpeechEmoTermInstance().get(CMSConstants.TERM_SLUG));
         termInstanceDTO.setTermInstanceSlug(selectedTermInstanceSlug);
         termInstanceDTO = cmscs.deleteTermInstance(termInstanceDTO);
         
         if ( termInstanceDTO.getResponseCode() != HedwigResponseCode.SUCCESS) {
-            dGRFSpeechDTO.setResponseCode(termInstanceDTO.getResponseCode());
-            return dGRFSpeechDTO;
+            sonorusDTO.setResponseCode(termInstanceDTO.getResponseCode());
+            return sonorusDTO;
         }
         
-        dGRFSpeechDTO.setResponseCode(HedwigResponseCode.SUCCESS);
-        return dGRFSpeechDTO;
+        sonorusDTO.setResponseCode(HedwigResponseCode.SUCCESS);
+        return sonorusDTO;
     }
 
 }

@@ -30,7 +30,7 @@
         </dependency>
         <dependency>
             <groupId>org.patronus</groupId>
-            <artifactId>FractalCoreClient</artifactId>
+            <artifactId>PatronusCoreClient</artifactId>
             <version>1.0-SNAPSHOT</version>
             <type>jar</type>
         </dependency>
